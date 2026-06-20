@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InfoCollector</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <main class="container">
+        <section class="card hero">
+            <h1>InfoCollector</h1>
+            <p>Учебная информационная система для сбора данных с веб-страниц.</p>
+        </section>
+
+        <section class="card about-system">
+            <h2>О системе</h2>
+            <p>InfoCollector помогает пользователю собрать текстовую информацию с выбранной веб-страницы по заданному поисковому запросу.</p>
+
+            <ul>
+                <li><strong>Назначение:</strong> быстро найти полезные фрагменты текста на странице и сохранить результат для учебного анализа.</li>
+                <li><strong>Собираемые данные:</strong> дата сбора, URL источника, заголовок страницы, найденные абзацы и количество ссылок.</li>
+                <li><strong>Работа пользователя:</strong> пользователь вводит запрос и URL, нажимает кнопку сбора, смотрит результат, историю, экспортирует CSV или удаляет записи.</li>
+                <li><strong>Хранение:</strong> результаты сохраняются локально в базе данных SQLite в папке <code>data</code>.</li>
+                <li><strong>Ограничения парсинга:</strong> некоторые сайты блокируют автоматические запросы, требуют JavaScript или отдают неполный HTML.</li>
+            </ul>
+        </section>
+
+        <section class="card">
+            <h2>Сбор информации</h2>
+
+            <form id="collect-form">
+                <label for="query">Поисковый запрос</label>
+                <input id="query" name="query" type="text" placeholder="Например: Python" required>
+
+                <label for="url">URL сайта для сбора данных</label>
+                <input id="url" name="url" type="url" placeholder="https://example.com" required>
+
+                <button type="submit">Собрать информацию</button>
+            </form>
+            <p id="status" class="status"></p>
+        </section>
+
+        <section class="card" id="results-card">
+            <h2>Результаты</h2>
+            <div id="results">Пока нет данных. Заполните форму и запустите сбор.</div>
+        </section>
+
+        <section class="card">
+            <div class="history-header">
+                <h2>История запросов</h2>
+                <a class="export-link" href="http://127.0.0.1:8000/export">Экспорт в CSV</a>
+            </div>
+            <div id="history"></div>
+        </section>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
