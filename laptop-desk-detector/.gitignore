@@ -1,0 +1,16 @@
+# Runtime SQLite database is created automatically on app startup.
+history.db
+
+# User uploads, generated detections and reports.
+static/uploads/*
+!static/uploads/.gitkeep
+static/results/*
+!static/results/.gitkeep
+reports/*
+!reports/.gitkeep
+
+# Python/cache/local environment files.
+__pycache__/
+*.py[cod]
+.venv/
+.env

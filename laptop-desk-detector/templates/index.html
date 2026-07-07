@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Детекция ноутбуков на партах</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <main class="container">
+    <section class="hero">
+      <h1>Детекция ноутбуков на партах</h1>
+      <p>Учебное Flask-приложение использует предобученную YOLOv8 для поиска ноутбуков на фото и видео аудиторий, классов и рабочих пространств.</p>
+    </section>
+
+    <section class="card">
+      <form id="uploadForm">
+        <label>Изображение или видео</label>
+        <input type="file" name="file" accept="image/*,video/*" required>
+        <label>Confidence threshold: <span id="confValue">0.35</span></label>
+        <input type="range" name="confidence" min="0.05" max="0.95" step="0.05" value="0.35" id="confidence">
+        <button type="submit">Запустить обработку</button>
+      </form>
+      <div id="loading" class="loading hidden">Идёт обработка файла, пожалуйста подождите...</div>
+      <div id="error" class="error hidden"></div>
+    </section>
+
+    <section id="result" class="card hidden">
+      <h2>Результат</h2>
+      <div id="media"></div>
+      <div id="stats" class="stats"></div>
+    </section>
+
+    <section class="card actions">
+      <a href="/export/excel">Скачать Excel-отчёт</a>
+      <a href="/export/pdf">Скачать PDF-отчёт</a>
+    </section>
+
+    <section class="card">
+      <h2>История последних запросов</h2>
+      <div class="table-wrap">
+        <table id="historyTable">
+          <thead>
+            <tr><th>ID</th><th>Дата</th><th>Файл</th><th>Тип</th><th>Кол-во</th><th>Среднее</th><th>Макс.</th><th>Conf</th><th>Время, сек.</th></tr>
+          </thead>
+          <tbody>
+            {% for row in history %}
+            <tr>
+              <td>{{ row.id }}</td><td>{{ row.timestamp }}</td><td>{{ row.filename }}</td><td>{{ row.file_type }}</td>
+              <td>{{ row.laptops_count or '-' }}</td><td>{{ row.avg_laptops_count or '-' }}</td><td>{{ row.max_laptops_count or '-' }}</td>
+              <td>{{ row.confidence_threshold }}</td><td>{{ row.processing_time_seconds }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+<script>
+const form = document.getElementById('uploadForm');
+const confidence = document.getElementById('confidence');
+const confValue = document.getElementById('confValue');
+const loading = document.getElementById('loading');
+const errorBox = document.getElementById('error');
+const result = document.getElementById('result');
+const media = document.getElementById('media');
+const stats = document.getElementById('stats');
+
+confidence.addEventListener('input', () => confValue.textContent = confidence.value);
+
+form.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  loading.classList.remove('hidden');
+  errorBox.classList.add('hidden');
+  result.classList.add('hidden');
+  const response = await fetch('/process', { method: 'POST', body: new FormData(form) });
+  const data = await response.json();
+  loading.classList.add('hidden');
+  if (!response.ok) {
+    errorBox.textContent = data.error || 'Неизвестная ошибка обработки.';
+    errorBox.classList.remove('hidden');
+    return;
+  }
+  const src = `${data.result_path}?t=${Date.now()}`;
+  media.innerHTML = data.file_type === 'video'
+    ? `<video controls src="${src}"></video>`
+    : `<img src="${src}" alt="Результат детекции">`;
+  stats.innerHTML = data.file_type === 'video'
+    ? `<p><b>Среднее количество ноутбуков:</b> ${data.avg_laptops_count}</p><p><b>Максимум в кадре:</b> ${data.max_laptops_count}</p><p><b>Кадров обработано:</b> ${data.frames_processed}</p>`
+    : `<p><b>Найдено ноутбуков:</b> ${data.laptops_count}</p><p><b>Confidence найденных объектов:</b> ${(data.confidences || []).join(', ') || '-'}</p>`;
+  stats.innerHTML += `<p><b>Порог confidence:</b> ${data.confidence_threshold}</p><p><b>Время обработки:</b> ${data.processing_time_seconds} сек.</p><p><b>Дата:</b> ${data.timestamp}</p>`;
+  if (data.message) stats.innerHTML += `<p class="note">${data.message}</p>`;
+  result.classList.remove('hidden');
+  refreshHistory();
+});
+
+async function refreshHistory() {
+  const rows = await (await fetch('/history')).json();
+  document.querySelector('#historyTable tbody').innerHTML = rows.slice(0, 10).map(row => `
+    <tr><td>${row.id}</td><td>${row.timestamp}</td><td>${row.filename}</td><td>${row.file_type}</td>
+    <td>${row.laptops_count ?? '-'}</td><td>${row.avg_laptops_count ?? '-'}</td><td>${row.max_laptops_count ?? '-'}</td>
+    <td>${row.confidence_threshold}</td><td>${row.processing_time_seconds}</td></tr>`).join('');
+}
+</script>
+</body>
+</html>
